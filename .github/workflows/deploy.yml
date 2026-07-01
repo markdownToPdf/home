@@ -8,13 +8,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  # Derive the image namespace from the actual repository owner so that the
-  # default GITHUB_TOKEN (which is scoped to the repo's installation) is
-  # authorized to push. Pushing to a foreign namespace such as
-  # ghcr.io/<other-user>/<repo> fails with:
-  #   permission_denied: The requested installation does not exist
-  DOCKER_IMAGE: ghcr.io/${{ lower(github.repository_owner) }}/home
   SERVER_APP_DIR: /opt/markdown-pdf
+  # 仓库所有者中可能含大写字母（GHCR 命名空间必须小写），小写化后再拼接镜像名。
+  # 例如 markdownToPdf -> ghcr.io/markdowntopdf/home
+  DOCKER_IMAGE: ghcr.io/markdowntopdf/home
 
 jobs:
   # ==================== CI ====================
@@ -49,7 +46,6 @@ jobs:
     name: Deploy to Server
     runs-on: ubuntu-latest
     needs: ci
-    if: github.event_name == 'push'
     permissions:
       packages: write
       contents: write
@@ -112,15 +108,16 @@ jobs:
             });
 
       - name: Create Release
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        permissions:
+          contents: write
         with:
           tag_name: v${{ steps.meta.outputs.tag }}
-          release_name: Release v${{ steps.meta.outputs.tag }}
+          name: Release v${{ steps.meta.outputs.tag }}
           draft: false
           prerelease: false
+          generate_release_notes: true
 
       - name: Deploy to Server
         uses: appleboy/ssh-action@v1
@@ -152,22 +149,3 @@ jobs:
 
             # Show status
             docker compose ps
-
-  # ==================== Create Git Tag Only (for other branches) ====================
-  tag-only:
-    name: Create Tag
-    runs-on: ubuntu-latest
-    needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    outputs:
-      tag: ${{ steps.meta.outputs.tag }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Extract metadata
-        id: meta
-        run: |
-          TAG=$(date +'%Y.%m.%d.%H%M%S')
-          echo "tag=$TAG" >> $GITHUB_OUTPUT
