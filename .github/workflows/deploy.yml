@@ -110,8 +110,6 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         if: github.ref == 'refs/heads/main'
-        permissions:
-          contents: write
         with:
           tag_name: v${{ steps.meta.outputs.tag }}
           name: Release v${{ steps.meta.outputs.tag }}
