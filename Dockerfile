@@ -23,7 +23,6 @@ WORKDIR /app
 # 安装 Chromium（用于 Puppeteer 生成 PDF）
 RUN apk add --no-cache \
     chromium \
-    chromium-suid \
     nss \
     freetype \
     harfbuzz \
