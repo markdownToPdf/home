@@ -83,11 +83,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Create Git Tag
-        uses: actions/create-git-ref@v1
-        with:
-          tag: v${{ steps.meta.outputs.tag }}
-          refType: tag
-          sha: ${{ github.sha }}
+        run: git tag v${{ steps.meta.outputs.tag }} && git push origin v${{ steps.meta.outputs.tag }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
