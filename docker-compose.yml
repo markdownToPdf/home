@@ -1,16 +1,18 @@
+version: '3.8'
+
 services:
   app:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: ghcr.io/markdowntopdf/home:latest
+    container_name: markdown-pdf-app
+    restart: unless-stopped
     ports:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - CHROME_PATH=/usr/bin/chromium-browser
-    restart: unless-stopped
+      - NEXT_PUBLIC_API_URL=$API_URL
     healthcheck:
-      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000"]
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 40s
