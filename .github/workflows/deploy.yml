@@ -7,7 +7,13 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: ghcr.io/ly8529/home
+  REGISTRY: ghcr.io
+  # Derive the image namespace from the actual repository owner so that the
+  # default GITHUB_TOKEN (which is scoped to the repo's installation) is
+  # authorized to push. Pushing to a foreign namespace such as
+  # ghcr.io/<other-user>/<repo> fails with:
+  #   permission_denied: The requested installation does not exist
+  DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}/home
   SERVER_APP_DIR: /opt/markdown-pdf
 
 jobs:
