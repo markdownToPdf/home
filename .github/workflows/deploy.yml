@@ -9,6 +9,7 @@ on:
 env:
   REGISTRY: ghcr.io
   SERVER_APP_DIR: /opt/markdown-pdf
+  DEPLOY_BRANCH: ${{ github.ref_name }}
   # 仓库所有者中可能含大写字母（GHCR 命名空间必须小写），小写化后再拼接镜像名。
   # 例如 markdownToPdf -> ghcr.io/markdowntopdf/home
   DOCKER_IMAGE: ghcr.io/markdowntopdf/home
@@ -85,15 +86,16 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const branch = github.context.ref.replace('refs/heads/', '');
             const ref = await github.rest.git.getRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: 'refs/heads/' + context.ref_name
+              owner: github.context.repo.owner,
+              repo: github.context.repo.repo,
+              ref: 'refs/heads/' + branch
             });
 
             await github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner: github.context.repo.owner,
+              repo: github.context.repo.repo,
               ref: 'refs/tags/v${{ steps.meta.outputs.tag }}',
               sha: ref.data.object.sha
             });
@@ -119,7 +121,7 @@ jobs:
             cd ${{ env.SERVER_APP_DIR }}
 
             # Pull latest code
-            git pull origin ${{ github.ref_name }}
+            git pull origin ${{ env.DEPLOY_BRANCH }}
 
             # Pull new Docker image
             docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}
