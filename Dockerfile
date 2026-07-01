@@ -15,6 +15,9 @@ RUN npm ci
 # 复制源代码
 COPY . .
 
+# 构建 Next.js 应用
+RUN npm run build
+
 # ============ 生产阶段 ============
 FROM node:18-alpine AS runner
 
