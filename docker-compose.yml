@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: ghcr.io/markdowntopdf/home:latest
+    image: ghcr.io/ly8529/home:latest
     container_name: markdown-pdf-app
     restart: unless-stopped
     ports:

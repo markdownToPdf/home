@@ -7,7 +7,7 @@ on:
       - main
 
 env:
-  DOCKER_IMAGE: ghcr.io/markdowntopdf/home
+  DOCKER_IMAGE: ghcr.io/ly8529/home
   SERVER_APP_DIR: /opt/markdown-pdf
 
 jobs:
@@ -107,7 +107,7 @@ jobs:
 
       - name: Create Release
         uses: actions/create-release@v1
-        if: github.ref == 'refs/heads/master'
+        if: github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
@@ -127,7 +127,7 @@ jobs:
             cd ${{ env.SERVER_APP_DIR }}
 
             # Pull latest code
-            git pull origin master
+            git pull origin main
 
             # Pull new Docker image
             docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}
@@ -152,7 +152,7 @@ jobs:
     name: Create Tag
     runs-on: ubuntu-latest
     needs: ci
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       tag: ${{ steps.meta.outputs.tag }}
 
