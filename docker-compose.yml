@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   app:
-    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-ly8529}/home:latest
-    # 仓库所有者必须小写（GHCR 规范）
+    image: ghcr.io/${GITHUB_REPOSITORY_OWNER:-markdowntopdf}/home:latest
+    # GHCR 命名空间必须全小写
     container_name: markdown-pdf-app
     restart: unless-stopped
     ports:
