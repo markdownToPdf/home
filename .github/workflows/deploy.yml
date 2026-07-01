@@ -13,7 +13,7 @@ env:
   # authorized to push. Pushing to a foreign namespace such as
   # ghcr.io/<other-user>/<repo> fails with:
   #   permission_denied: The requested installation does not exist
-  DOCKER_IMAGE: ghcr.io/${{ github.repository_owner }}/home
+  DOCKER_IMAGE: ghcr.io/${{ lower(github.repository_owner) }}/home
   SERVER_APP_DIR: /opt/markdown-pdf
 
 jobs:
