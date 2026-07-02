@@ -40,7 +40,7 @@ export default function Header({ isDark, onToggleDark }: HeaderProps) {
               href="#editor"
               className="text-slate-600 dark:text-slate-300 hover:text-primary-600 dark:hover:text-primary-400 font-medium transition-colors"
             >
-              编辑器
+              编辑器 测试
             </Link>
             <Link
               href="#features"
