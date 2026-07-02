@@ -107,9 +107,6 @@ jobs:
             set -e
             cd ${{ env.SERVER_APP_DIR }}
 
-            # Create .env from workflow secrets if needed
-            touch .env
-
             # Login to GHCR (fine-grained PAT with packages:read scope)
             echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
