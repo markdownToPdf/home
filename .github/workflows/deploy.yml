@@ -6,7 +6,7 @@ on:
       - main
 
 env:
-  SERVER_APP_DIR: ~/markdown-pdf-home
+  SERVER_APP_DIR: /home/luya/markdown-pdf-home
   REPO_NAME: ${{ github.event.repository.name }}
   REPO_OWNER: ${{ github.repository_owner }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
