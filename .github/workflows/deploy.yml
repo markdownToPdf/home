@@ -3,7 +3,6 @@ name: Deploy to Server
 on:
   push:
     branches:
-      - master
       - main
 
 env:
@@ -107,8 +106,8 @@ jobs:
             set -e
             cd ${{ env.SERVER_APP_DIR }}
 
-            # Login to GHCR (fine-grained PAT with packages:read scope)
-            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            # Login to GHCR
+            echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
             # Pull latest Docker image
             docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}
