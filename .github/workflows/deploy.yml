@@ -102,26 +102,28 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          envs: DEPLOY_BRANCH,DOCKER_IMAGE
           script: |
+            set -e
             cd ${{ env.SERVER_APP_DIR }}
 
-            # Pull latest code
-            git pull origin ${{ env.DEPLOY_BRANCH }}
+            # Create .env from workflow secrets if needed
+            touch .env
 
-            # Pull new Docker image
+            # Login to GHCR (fine-grained PAT with packages:read scope)
+            echo ${{ secrets.GHCR_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+            # Pull latest Docker image
             docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}
 
-            # Stop old container
-            docker compose down || true
+            # Update docker-compose.yml image tag
+            sed -i "s|image:.*home.*|image: ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}|" docker-compose.yml
 
-            # Update image tag in compose file
-            sed -i "s|image:.*home.*|image: ${{ env.DOCKER_IMAGE }}:${{ steps.meta.outputs.tag }}|" docker-compose.yml || true
+            # Stop old container
+            docker compose down || docker-compose down || true
 
             # Start with new image
-            docker compose up -d
-
-            # Cleanup old images
-            docker image prune -f
+            docker compose up -d || docker-compose up -d
 
             # Show status
-            docker compose ps
+            docker compose ps || docker-compose ps
