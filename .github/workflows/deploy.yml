@@ -75,6 +75,9 @@ jobs:
 
             echo "Deploying version: $VERSION"
 
+            # 删除旧文件（可能由 root 创建，需要 sudo）
+            sudo rm -rf source source.tar.gz || true
+
             # 下载指定版本源码
             echo "Downloading source..."
             curl -L \
@@ -83,7 +86,7 @@ jobs:
               -o source.tar.gz
 
             # 解压到 source 目录
-            rm -rf source && mkdir -p source
+            mkdir -p source
             tar -xzf source.tar.gz -C source --strip-components=1
             rm source.tar.gz
 
