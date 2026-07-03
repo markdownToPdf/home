@@ -1,5 +1,5 @@
 # ============ 构建阶段 ============
-FROM registry.nju.edu.cn/library/node:18-bullseye AS builder
+FROM node:18-bullseye AS builder
 
 # 安装构建依赖
 RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # 安装依赖
-RUN npm ci --registry=https://registry.nju.edu.cn
+RUN npm ci
 
 # 复制源代码
 COPY . .
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # ============ 生产阶段 ============
-FROM registry.nju.edu.cn/library/node:18-bullseye-slim AS runner
+FROM node:18-bullseye-slim AS runner
 
 WORKDIR /app
 
