@@ -2,7 +2,7 @@
 FROM node:18-bullseye AS builder
 
 # 安装构建依赖
-RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ FROM node:18-bullseye-slim AS runner
 WORKDIR /app
 
 # 安装 Chromium（用于 Puppeteer 生成 PDF）
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     chromium \
     libnss3 \
     libfreetype6 \
