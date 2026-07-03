@@ -1,59 +1,78 @@
-# ============ 构建阶段 ============
-FROM node:18-bullseye AS builder
+# ============ 构建参数 ============
+ARG NODE_VERSION=20.18.0
 
-# 安装构建依赖
-RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
+# ============ 构建阶段 ============
+FROM node:${NODE_VERSION}-bullseye-slim AS builder
 
 WORKDIR /app
 
-# 复制 package 文件
+# 先单独复制 package 文件以最大化缓存
 COPY package*.json ./
+RUN npm ci --no-audit --no-fund
 
-# 安装依赖
-RUN npm ci
-
-# 复制源代码
+# 复制源码
 COPY . .
 
-# 构建 Next.js 应用
-RUN npm run build
+# 构建 Next.js standalone 应用
+RUN npm run build && \
+    # standalone 模式下手动复制 public/.next/static（Next.js 只追踪 import 关系）
+    cp -r public ./.next/standalone/ 2>/dev/null || true && \
+    cp -r .next/static ./.next/standalone/.next/ 2>/dev/null || true
 
 # ============ 生产阶段 ============
-FROM node:18-bullseye-slim AS runner
+FROM node:${NODE_VERSION}-bullseye-slim AS runner
+
+LABEL org.opencontainers.image.source="https://github.com/markdownToPdf/markdown-pdf-home" \
+      org.opencontainers.image.description="Markdown to PDF web app" \
+      org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app
 
-# 安装 Chromium（用于 Puppeteer 生成 PDF）
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    chromium \
-    libnss3 \
-    libfreetype6 \
-    libharfbuzz0b \
-    fonts-freefont-ttf \
-    ca-certificates \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get autoremove -y
+ENV NODE_ENV=production \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0" \
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
+    CHROME_PATH=/usr/bin/chromium \
+    NEXT_TELEMETRY_DISABLED=1
 
-# 设置环境变量
-ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
-ENV CHROME_PATH=/usr/bin/chromium
-ENV NODE_ENV=production
+# 安装 Chromium 及必要的中文字体支持（PDF 导出需要）
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      chromium \
+      libnss3 \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libcups2 \
+      libdrm2 \
+      libxkbcommon0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxrandr2 \
+      libgbm1 \
+      libpango-1.0-0 \
+      libcairo2 \
+      libasound2 \
+      fonts-noto-cjk \
+      fonts-noto-color-emoji \
+      fonts-freefont-ttf \
+      ca-certificates \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/* /tmp/* /root/.npm
 
 # 创建非 root 用户
 RUN groupadd --system --gid 1001 nodejs && \
     useradd --system --uid 1001 --gid nodejs nextjs
 
-# 从 builder 复制构建产物
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+# 只从 builder 复制 standalone 产物（静态文件已包含在内）
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
 EXPOSE 3000
 
-ENV PORT=3000
-ENV HOSTNAME="0.0.0.0"
+# 健康检查：打到 /，期望拿到 200/3xx（Next.js 首页）
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/', r => process.exit(r.statusCode < 400 ? 0 : 1)).on('error', () => process.exit(1))" || exit 1
 
 CMD ["node", "server.js"]
