@@ -36,7 +36,13 @@ ENV NODE_ENV=production \
     CHROME_PATH=/usr/bin/chromium \
     NEXT_TELEMETRY_DISABLED=1
 
-# 安装 Chromium 及必要的中文字体支持（PDF 导出需要）
+# 字体层独立成 step，减小下载失败的影响范围
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      fonts-noto-cjk \
+      fonts-noto-color-emoji \
+    && rm -rf /var/lib/apt/lists/* /var/cache/apt/*
+
+# 安装 Chromium 及必要的运行库
 RUN apt-get update && apt-get install -y --no-install-recommends \
       chromium \
       libnss3 \
@@ -52,8 +58,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libpango-1.0-0 \
       libcairo2 \
       libasound2 \
-      fonts-noto-cjk \
-      fonts-noto-color-emoji \
       fonts-freefont-ttf \
       ca-certificates \
     && apt-get clean \

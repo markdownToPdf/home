@@ -106,34 +106,58 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
-          command_timeout: 10m
+          command_timeout: 30m
           envs: GITHUB_TOKEN
           script: |
             set -e
             IMAGE="ghcr.io/${{ steps.lowercase.outputs.owner }}/${{ steps.lowercase.outputs.name }}:${{ steps.tag.outputs.version }}"
 
-            echo "Logging in to ghcr.io..."
+            echo "=== Pre-deploy disk check ==="
+            df -h /var/lib/docker 2>/dev/null || df -h /
+            AVAILABLE_GB=$(df -BG /var/lib/docker 2>/dev/null | awk 'NR==2 {print $4}' | tr -d 'G')
+            if [ -n "$AVAILABLE_GB" ] && [ "$AVAILABLE_GB" -lt 3 ]; then
+              echo "WARN: less than ${AVAILABLE_GB}GB free, pruning dangling images first"
+              docker image prune -af
+              docker system prune -f
+            fi
+
+            echo "=== Login to ghcr.io ==="
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u "${{ steps.lowercase.outputs.owner }}" --password-stdin
 
-            echo "Pulling image: $IMAGE"
-            docker pull "$IMAGE"
+            echo "=== Pull image (with retry) ==="
+            for i in 1 2 3; do
+              if docker pull "$IMAGE"; then
+                echo "Pull succeeded on attempt $i"
+                break
+              fi
+              echo "Pull failed, attempt $i/3, waiting 15s..."
+              sleep 15
+              if [ "$i" = "3" ]; then
+                echo "Pull failed after 3 attempts, aborting"
+                exit 1
+              fi
+            done
 
-            echo "Stopping old container..."
+            echo "=== Stop & remove old container ==="
             docker stop markdown-pdf-app || true
             docker rm markdown-pdf-app || true
 
-            echo "Starting new container..."
+            echo "=== Start new container ==="
             docker run -d \
               --name markdown-pdf-app \
               -p 3000:3000 \
               --restart unless-stopped \
               "$IMAGE"
 
-            echo "Cleaning up old images..."
+            echo "=== Cleanup old images ==="
             docker image prune -f
 
-            echo "Deployed: $IMAGE"
+            echo "=== Verify ==="
+            sleep 5
             docker ps | grep markdown-pdf
+            curl -sf http://localhost:3000/ -o /dev/null && echo "App responds OK" || echo "WARN: app not responding yet (may still be starting)"
+
+            echo "Deployed: $IMAGE"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
